@@ -1,0 +1,223 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>消费者行为分析与预测智能体</title>
+    <link rel="stylesheet" href="style.css" />
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js" defer></script>
+    <script src="app.js" defer></script>
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="topbar">
+        <div class="brand-block">
+          <div class="brand-mark">CB</div>
+          <div>
+            <h1>消费者行为分析与预测智能体</h1>
+            <p>基于行为数据、规则工具和阿里云 Qwen 模型的专业分析工作流</p>
+          </div>
+        </div>
+        <div class="status-pill" id="runStatus">
+          <span class="status-dot"></span>
+          待导入数据
+        </div>
+      </header>
+
+      <main class="workspace">
+        <aside class="side-panel" aria-label="控制面板">
+          <section class="panel-block">
+            <div class="section-title">
+              <i data-lucide="database"></i>
+              <h2>数据输入</h2>
+            </div>
+
+            <label class="field-label" for="csvFile">上传 CSV 文件</label>
+            <input class="file-input" id="csvFile" type="file" accept=".csv,text/csv" />
+
+            <div class="button-row">
+              <button class="btn secondary" id="loadSampleBtn" type="button">
+                <i data-lucide="file-down"></i>
+                载入样例
+              </button>
+              <button class="btn ghost" id="clearBtn" type="button">
+                <i data-lucide="trash-2"></i>
+                清空
+              </button>
+            </div>
+
+            <label class="field-label" for="csvText">粘贴 CSV 数据</label>
+            <textarea id="csvText" class="csv-textarea" spellcheck="false" placeholder="user_id,visits_30d,product_views,add_to_cart,purchases,total_spend,days_since_last_purchase"></textarea>
+
+            <button class="btn primary wide" id="parseBtn" type="button">
+              <i data-lucide="scan-line"></i>
+              分析数据
+            </button>
+          </section>
+
+          <section class="panel-block">
+            <div class="section-title">
+              <i data-lucide="settings-2"></i>
+              <h2>模型设置</h2>
+            </div>
+
+            <label class="field-label" for="apiKey">阿里云百炼 API Key</label>
+            <input id="apiKey" class="text-input" type="password" autocomplete="off" placeholder="sk-..." />
+
+            <label class="field-label" for="modelName">模型名称</label>
+            <input id="modelName" class="text-input" type="text" value="qwen-plus" />
+
+            <label class="field-label" for="temperature">报告稳定度</label>
+            <div class="range-row">
+              <input id="temperature" type="range" min="0" max="0.8" step="0.1" value="0.3" />
+              <output id="temperatureValue">0.3</output>
+            </div>
+          </section>
+
+          <section class="panel-block">
+            <div class="section-title">
+              <i data-lucide="workflow"></i>
+              <h2>工作流</h2>
+            </div>
+            <ol class="workflow-list">
+              <li>导入消费者行为数据</li>
+              <li>计算消费价值和流失风险</li>
+              <li>生成用户分群和运营动作</li>
+              <li>调用 Qwen 输出专业报告</li>
+            </ol>
+          </section>
+        </aside>
+
+        <section class="main-panel">
+          <nav class="tabbar" aria-label="页面视图">
+            <button class="tab active" data-tab="overview" type="button">分析概览</button>
+            <button class="tab" data-tab="segments" type="button">用户分群</button>
+            <button class="tab" data-tab="report" type="button">智能报告</button>
+          </nav>
+
+          <section class="kpi-grid" aria-label="核心指标">
+            <article class="metric-card">
+              <span>用户数</span>
+              <strong id="metricUsers">0</strong>
+              <small id="metricUsersSub">等待数据</small>
+            </article>
+            <article class="metric-card">
+              <span>购买转化率</span>
+              <strong id="metricConversion">0%</strong>
+              <small id="metricConversionSub">有购买用户占比</small>
+            </article>
+            <article class="metric-card">
+              <span>平均消费额</span>
+              <strong id="metricSpend">¥0</strong>
+              <small id="metricSpendSub">按用户计算</small>
+            </article>
+            <article class="metric-card risk">
+              <span>流失风险</span>
+              <strong id="metricRisk">0</strong>
+              <small id="metricRiskSub">需优先干预</small>
+            </article>
+          </section>
+
+          <div class="tab-view active" id="overviewView">
+            <div class="content-grid">
+              <section class="panel-card">
+                <div class="card-head">
+                  <div>
+                    <h2>分群分布</h2>
+                    <p>按消费价值、活跃度和最近购买时间综合判断</p>
+                  </div>
+                </div>
+                <div class="chart-block" id="segmentChart"></div>
+              </section>
+
+              <section class="panel-card">
+                <div class="card-head">
+                  <div>
+                    <h2>转化漏斗</h2>
+                    <p>访问、浏览、加购、购买四个关键步骤</p>
+                  </div>
+                </div>
+                <div class="funnel-block" id="funnelChart"></div>
+              </section>
+
+              <section class="panel-card wide-card">
+                <div class="card-head">
+                  <div>
+                    <h2>经营诊断</h2>
+                    <p>自动识别数据中的主要机会和风险</p>
+                  </div>
+                </div>
+                <div class="diagnosis-list" id="diagnosisList">
+                  <div class="empty-state">导入数据后显示诊断结论</div>
+                </div>
+              </section>
+            </div>
+          </div>
+
+          <div class="tab-view" id="segmentsView">
+            <section class="panel-card">
+              <div class="card-head table-head">
+                <div>
+                  <h2>用户分群明细</h2>
+                  <p>每个用户的价值评分、风险评分和建议动作</p>
+                </div>
+                <div class="table-actions">
+                  <input id="tableSearch" class="search-input" type="search" placeholder="搜索用户或分群" />
+                  <button class="btn secondary compact" id="exportCsvBtn" type="button">
+                    <i data-lucide="download"></i>
+                    导出 CSV
+                  </button>
+                </div>
+              </div>
+              <div class="table-wrap">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>用户 ID</th>
+                      <th>分群</th>
+                      <th>价值评分</th>
+                      <th>风险评分</th>
+                      <th>购买次数</th>
+                      <th>消费金额</th>
+                      <th>最近购买</th>
+                      <th>建议动作</th>
+                    </tr>
+                  </thead>
+                  <tbody id="segmentTableBody">
+                    <tr>
+                      <td colspan="8" class="empty-cell">暂无数据</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </section>
+          </div>
+
+          <div class="tab-view" id="reportView">
+            <section class="panel-card">
+              <div class="card-head report-head">
+                <div>
+                  <h2>Qwen 智能分析报告</h2>
+                  <p>模型只接收汇总指标和分群统计，避免上传完整明细</p>
+                </div>
+                <div class="button-row no-wrap">
+                  <button class="btn primary" id="generateReportBtn" type="button">
+                    <i data-lucide="sparkles"></i>
+                    生成报告
+                  </button>
+                  <button class="btn secondary" id="copyReportBtn" type="button">
+                    <i data-lucide="copy"></i>
+                    复制
+                  </button>
+                </div>
+              </div>
+              <div class="report-output" id="reportOutput">
+                <div class="empty-state">完成数据分析并输入 API Key 后，可生成 Qwen 专业报告</div>
+              </div>
+            </section>
+          </div>
+        </section>
+      </main>
+    </div>
+  </body>
+</html>
